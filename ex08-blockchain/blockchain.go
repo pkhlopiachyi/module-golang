@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -13,17 +12,17 @@ import (
 )
 
 type Block struct {
-	Timestamp     string `json: "timestamp"`
+	Timestamp     int64  `json: "timestamp"`
 	Data          []byte `json: "data"`
 	PrevBlockHash []byte `json: "prevblockhash"`
 	Hash          []byte `json: "hash"`
 }
 
 type Blockchain struct {
-	blocks []Block `json: "blocks"`
+	blocks []*Block `json: "blocks"`
 }
 
-func (b Block) SetHash() {
+func (b *Block) SetHash() {
 	timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
 	headers := bytes.Join([][]byte{b.PrevBlockHash, b.Data, timestamp}, []byte{})
 	hash := sha256.Sum256(headers)
@@ -34,14 +33,13 @@ func (b Block) SetHash() {
 func NewBlock(data string, prevBlockHash []byte) *Block {
 	block := &Block{time.Now().Unix(), []byte(data), prevBlockHash, []byte{}}
 	block.SetHash()
-
 	return block
 }
 
-func (blkch *Blockchain) AddBlock(data string) {
-	prevBlock := blkch.blocks[len(blkch.blocks)-1]
+func (bc *Blockchain) AddBlock(data string) {
+	prevBlock := bc.blocks[len(bc.blocks)-1]
 	newBlock := NewBlock(data, prevBlock.Hash)
-	blkch.blocks = append(blkch.blocks, newBlock)
+	bc.blocks = append(bc.blocks, newBlock)
 }
 
 func NewGenesisBlock() *Block {
@@ -51,27 +49,31 @@ func NewGenesisBlock() *Block {
 func NewBlockchain() *Blockchain {
 	return &Blockchain{[]*Block{NewGenesisBlock()}}
 }
-func main() {
+
+func fCreate() {
 	blkch := NewBlockchain()
 
 	blkch.AddBlock("First")
 	blkch.AddBlock("Second")
-
-	for _, block := range blkch.blocks {
-		fmt.Printf("Prev. hash: %x\n", block.PrevBlockHash)
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %x\n", block.Hash)
-		fmt.Println()
-	}
-	tmp := *blkch
 	var buf = new(bytes.Buffer)
-
-	enc := json.NewEncoder(buf)
-	enc.Encode(tmp)
 	f, err := os.Create("hash.db.json")
-	if nil != err {
-		log.Fatalln(err)
+	for _, block := range blkch.blocks {
+
+		enc := json.NewEncoder(buf)
+		enc.Encode(block)
+
+		if nil != err {
+			log.Fatalln(err)
+		}
+		defer f.Close()
+		io.Copy(f, buf)
 	}
-	defer f.Close()
-	io.Copy(f, buf)
+}
+
+func IsExist(fname string) {
+	if _, err := os.Open(filename); err == nil {
+		return false
+	}
+
+	return true
 }
