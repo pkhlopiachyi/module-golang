@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,10 +13,10 @@ import (
 )
 
 type Block struct {
-	Timestamp     int64  `json: "timestamp"`
-	Data          []byte `json: "data"`
-	PrevBlockHash []byte `json: "prevblockhash"`
-	Hash          []byte `json: "hash"`
+	Timestamp     int64  `json:"timestamp"`
+	Data          []byte `json:"data"`
+	PrevBlockHash []byte `json:"prevblockhash"`
+	Hash          []byte `json:"hash"`
 }
 
 type Blockchain struct {
@@ -51,15 +52,42 @@ func NewBlockchain() *Blockchain {
 }
 
 func fCreate() {
-	blkch := NewBlockchain()
 
-	blkch.AddBlock("First")
-	blkch.AddBlock("Second")
+	block1 := NewBlockchain()
+
+	jsonFile, err := os.Create("hash.db.json")
+	if err != nil {
+		fmt.Println("Message", err)
+	}
+
+	jsonWriter := io.Writer(jsonFile)
+	encoder := json.NewEncoder(jsonWriter)
+	err = encoder.Encode(&block1)
+	if err != nil {
+		fmt.Println("Message", err)
+	}
+}
+
+func IsExist(fname string) bool {
+	if _, err := os.Open(fname); err != nil {
+		return false
+	}
+	return true
+}
+func AddItem(filename, message string) {
+
+	var blkch Blockchain
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		fmt.Println("Message", err)
+	}
+
+	defer f.Close()
 	var buf = new(bytes.Buffer)
-	f, err := os.Create("hash.db.json")
 	for _, block := range blkch.blocks {
 
-		enc := json.NewEncoder(buf)
+		jsonWriter := io.Writer(f)
+		enc := json.NewEncoder(jsonWriter)
 		enc.Encode(block)
 
 		if nil != err {
@@ -70,10 +98,31 @@ func fCreate() {
 	}
 }
 
-func IsExist(fname string) {
-	if _, err := os.Open(filename); err == nil {
-		return false
-	}
+func main() {
+	fileName := "hash.db.json"
+	if IsExist(fileName) == false {
+		fCreate()
+		blkch := NewBlockchain()
 
-	return true
+		f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0755)
+		if err != nil {
+			fmt.Println("Message", err)
+		}
+		var buf = new(bytes.Buffer)
+		for _, block := range blkch.blocks {
+
+			jsonWriter := io.Writer(f)
+			enc := json.NewEncoder(jsonWriter)
+			enc.Encode(block)
+
+			if nil != err {
+				log.Fatalln(err)
+			}
+			defer f.Close()
+			io.Copy(f, buf)
+		}
+	}
+	message := "First"
+	AddItem(fileName, message)
+
 }
