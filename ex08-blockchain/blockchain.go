@@ -14,14 +14,14 @@ import (
 )
 
 type Block struct {
-	Timestamp     int64  `json:"timestamp"`
-	Data          []byte `json:"data"`
-	PrevBlockHash []byte `json:"prevblockhash"`
-	Hash          []byte `json:"hash"`
+	Timestamp     int64
+	Data          []byte
+	PrevBlockHash []byte
+	Hash          []byte
 }
 
 type Blockchain struct {
-	blocks []*Block `json: "blocks"`
+	blocks []*Block
 }
 
 func (b *Block) SetHash() {
